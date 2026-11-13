@@ -1,19 +1,36 @@
 import "dotenv/config";
 import Fastify from "fastify";
+import fastifyCookie from "@fastify/cookie";
+import fastifyJwt from "@fastify/jwt";
 import { prisma } from "./lib/prisma.js";
 import { redis } from "./lib/redis.js";
+import { authRoutes } from "./modules/auth/auth.routes.js";
 
 const server = Fastify({
   logger: true,
 });
 
+// 1. Подключаем работу с куками
+await server.register(fastifyCookie, {
+  secret: process.env.COOKIE_SECRET || "fallback_cookie_secret",
+});
+
+// 2. Подключаем JWT и учим его автоматически читать токен из куки "nexus_token"
+await server.register(fastifyJwt, {
+  secret: process.env.JWT_SECRET || "fallback_jwt_secret",
+  cookie: {
+    cookieName: "nexus_token",
+    signed: false,
+  },
+});
+
+// 3. Регистрируем маршруты аутентификации по адресу /api/auth/*
+await server.register(authRoutes, { prefix: "/api/auth" });
+
 // Эндпоинт проверки здоровья системы (Healthcheck)
 server.get("/health", async (_request, reply) => {
   try {
-    // 1. Проверяем связь с PostgreSQL легким запросом SELECT 1
     await prisma.$queryRaw`SELECT 1`;
-
-    // 2. Проверяем связь с Redis командой PING
     const redisPong = await redis.ping();
 
     return reply.status(200).send({

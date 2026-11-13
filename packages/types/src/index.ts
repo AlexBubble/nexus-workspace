@@ -28,3 +28,22 @@ export const CreateWorkspaceSchema = z.object({
 });
 
 export type CreateWorkspaceDto = z.infer<typeof CreateWorkspaceSchema>;
+
+// 4. Схемы для Аутентификации (Регистрация и Вход)
+export const RegisterSchema = z.object({
+  email: z.string().email("Некорректный формат email"),
+  password: z
+    .string()
+    .min(8, "Пароль должен содержать минимум 8 символов")
+    .max(100, "Пароль слишком длинный"),
+  fullName: z.string().min(2, "Имя должно содержать минимум 2 символа").max(100),
+});
+
+export type RegisterDto = z.infer<typeof RegisterSchema>;
+
+export const LoginSchema = z.object({
+  email: z.string().email("Некорректный формат email"),
+  password: z.string().min(1, "Введите пароль"),
+});
+
+export type LoginDto = z.infer<typeof LoginSchema>;
