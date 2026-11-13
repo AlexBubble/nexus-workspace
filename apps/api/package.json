@@ -14,7 +14,8 @@
     "@nexus/types": "workspace:*",
     "@prisma/client": "^6.5.0",
     "dotenv": "^16.4.7",
-    "fastify": "^5.2.1"
+    "fastify": "^5.2.1",
+    "ioredis": "^6.0.0"
   },
   "devDependencies": {
     "@nexus/tsconfig": "workspace:*",
