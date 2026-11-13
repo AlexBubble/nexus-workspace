@@ -19,7 +19,7 @@ await server.register(fastifyCookie, {
 await server.register(fastifyJwt, {
   secret: process.env.JWT_SECRET || "fallback_jwt_secret",
   cookie: {
-    cookieName: "nexus_token",
+    cookieName: "nexus_access",
     signed: false,
   },
 });
