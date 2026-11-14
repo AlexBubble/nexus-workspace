@@ -5,6 +5,7 @@ import fastifyJwt from "@fastify/jwt";
 import { prisma } from "./lib/prisma.js";
 import { redis } from "./lib/redis.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
+import { workspaceRoutes } from "./modules/workspaces/workspaces.routes.js";
 
 const server = Fastify({
   logger: true,
@@ -15,7 +16,7 @@ await server.register(fastifyCookie, {
   secret: process.env.COOKIE_SECRET || "fallback_cookie_secret",
 });
 
-// 2. Подключаем JWT и учим его автоматически читать токен из куки "nexus_token"
+// 2. Подключаем JWT и учим его читать токен из куки "nexus_access"
 await server.register(fastifyJwt, {
   secret: process.env.JWT_SECRET || "fallback_jwt_secret",
   cookie: {
@@ -24,8 +25,9 @@ await server.register(fastifyJwt, {
   },
 });
 
-// 3. Регистрируем маршруты аутентификации по адресу /api/auth/*
+// 3. Регистрируем доменные модули
 await server.register(authRoutes, { prefix: "/api/auth" });
+await server.register(workspaceRoutes, { prefix: "/api/workspaces" });
 
 // Эндпоинт проверки здоровья системы (Healthcheck)
 server.get("/health", async (_request, reply) => {

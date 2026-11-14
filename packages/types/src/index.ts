@@ -47,3 +47,15 @@ export const LoginSchema = z.object({
 });
 
 export type LoginDto = z.infer<typeof LoginSchema>;
+
+// 5. Схема создания канала внутри рабочего пространства
+export const CreateChannelSchema = z.object({
+  name: z
+    .string()
+    .min(2, "Название канала должно быть не короче 2 символов")
+    .max(30, "Название канала слишком длинное")
+    .regex(/^[a-z0-9-]+$/, "Только строчные латинские буквы, цифры и дефис"),
+  isPrivate: z.boolean().optional().default(false),
+});
+
+export type CreateChannelDto = z.infer<typeof CreateChannelSchema>;
