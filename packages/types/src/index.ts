@@ -59,3 +59,14 @@ export const CreateChannelSchema = z.object({
 });
 
 export type CreateChannelDto = z.infer<typeof CreateChannelSchema>;
+
+// 6. Схема отправки сообщения в канал
+export const SendMessageSchema = z.object({
+  channelId: z.string().uuid("Некорректный ID канала"),
+  content: z
+    .string()
+    .min(1, "Сообщение не может быть пустым")
+    .max(4000, "Сообщение слишком длинное (максимум 4000 символов)"),
+});
+
+export type SendMessageDto = z.infer<typeof SendMessageSchema>;
