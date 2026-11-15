@@ -28,6 +28,12 @@ export function ChatArea({ channel, socket, isConnected }: ChatAreaProps) {
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  // Состояние тех, кто прямо сейчас печатает в этом канале: { [userId]: fullName }
+  const [typingUsers, setTypingUsers] = useState<Record<string, string>>({});
+  // Хранилище активных таймеров сброса для каждого пользователя (защита от утечек памяти!)
+  const typingTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  // Время последней отправки сигнала "я печатаю", чтобы не спамить сервер на каждую букву
+  const lastTypingSentRef = useRef<number>(0);
 
   // 1. Загружаем историю сообщений из PostgreSQL через TanStack Query
   const { data: messages = [], isLoading } = useQuery<ChatMessage[]>({
@@ -59,8 +65,38 @@ export function ChatArea({ channel, socket, isConnected }: ChatAreaProps) {
 
     socket.on("new_message", handleNewMessage);
 
+    // Обработчик индикатора "Печатает..." от других участников канала
+    const handleUserTyping = (data: { channelId: string; userId: string; fullName: string }) => {
+      if (data.channelId !== channel.id) return;
+
+      // Добавляем имя человека в список печатающих
+      setTypingUsers((prev) => ({ ...prev, [data.userId]: data.fullName }));
+
+      // Если для этого человека уже тикал старый таймер — сбрасываем его!
+      if (typingTimeoutsRef.current[data.userId]) {
+        clearTimeout(typingTimeoutsRef.current[data.userId]);
+      }
+
+      // Ставим новый таймер: если через 3 секунды новых букв не будет — убираем надпись
+      typingTimeoutsRef.current[data.userId] = setTimeout(() => {
+        setTypingUsers((prev) => {
+          const updated = { ...prev };
+          delete updated[data.userId];
+          return updated;
+        });
+        delete typingTimeoutsRef.current[data.userId];
+      }, 3000);
+    };
+
+    socket.on("user_typing", handleUserTyping);
+
     return () => {
       socket.off("new_message", handleNewMessage);
+      socket.off("user_typing", handleUserTyping);
+      // Очищаем все активные таймеры при смене канала или размонтировании (ноль утечек памяти!)
+      Object.values(typingTimeoutsRef.current).forEach(clearTimeout);
+      typingTimeoutsRef.current = {};
+      setTypingUsers({});
     };
   }, [socket, isConnected, channel.id, queryClient]);
 
@@ -81,6 +117,17 @@ export function ChatArea({ channel, socket, isConnected }: ChatAreaProps) {
     });
 
     setText("");
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setText(e.target.value);
+
+    // Отправляем сигнал "typing" не чаще чем раз в 1.5 секунды (Throttle)
+    const now = Date.now();
+    if (socket && isConnected && now - lastTypingSentRef.current > 1500) {
+      socket.emit("typing", channel.id);
+      lastTypingSentRef.current = now;
+    }
   };
 
   return (
@@ -152,13 +199,22 @@ export function ChatArea({ channel, socket, isConnected }: ChatAreaProps) {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Живой индикатор "Печатает..." */}
+      <div className="h-6 px-6 text-xs text-indigo-400">
+        {Object.values(typingUsers).length > 0 && (
+          <span className="animate-pulse">
+            {Object.values(typingUsers).join(", ")} печатает...
+          </span>
+        )}
+      </div>
+
       {/* Форма отправки сообщения */}
       <form onSubmit={handleSend} className="border-t border-slate-800/80 p-4">
         <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-2.5 focus-within:border-indigo-500">
           <input
             type="text"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={handleInputChange}
             placeholder={`Написать в #${channel.name}...`}
             className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none"
           />

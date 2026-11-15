@@ -105,6 +105,26 @@ export function setupSocketServer(fastify: FastifyInstance) {
       callback?.({ status: "ok", message: savedMessage });
     });
 
+    // Событие 3: Эфемерный индикатор "Печатает..." (не пишем в БД, шлем всем в комнате КРОМЕ отправителя)
+    socket.on("typing", async (channelId: string) => {
+      if (typeof channelId !== "string" || !channelId) return;
+
+      // Достаем имя пользователя из БД (или можно кэшировать при подключении)
+      const currentUser = await prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { id: true, fullName: true },
+      });
+
+      if (!currentUser) return;
+
+      // socket.to(...) рассылает всем участникам комнаты, исключая самого автора события
+      socket.to(`channel:${channelId}`).emit("user_typing", {
+        channelId,
+        userId: currentUser.id,
+        fullName: currentUser.fullName,
+      });
+    });
+
     socket.on("disconnect", () => {
       fastify.log.info(`🔌 WebSocket disconnected: ${user.email}`);
     });
