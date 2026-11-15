@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Hash, LogOut, Plus, Sparkles } from "lucide-react";
+import { Check, Hash, LogOut, Plus, Sparkles, UserPlus } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 import { useSocket } from "@/hooks/use-socket";
@@ -35,6 +35,17 @@ export default function WorkspaceDashboardPage() {
   const [newWsSlug, setNewWsSlug] = useState("");
   const [isCreatingChannel, setIsCreatingChannel] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
+
+  const [copiedInvite, setCopiedInvite] = useState(false);
+
+  const handleCopyInvite = async () => {
+    if (!selectedSlug) return;
+    const res = await api.post(`/workspaces/${selectedSlug}/invites`);
+    const inviteUrl = `${window.location.origin}/invite/${res.data.code}`;
+    await navigator.clipboard.writeText(inviteUrl);
+    setCopiedInvite(true);
+    setTimeout(() => setCopiedInvite(false), 2500);
+  };
 
   // Подключаем WebSocket, как только убедились, что пользователь авторизован
   const { socket, isConnected } = useSocket(Boolean(user));
@@ -186,6 +197,19 @@ export default function WorkspaceDashboardPage() {
               </option>
             ))}
           </select>
+          {(activeWorkspace?.myRole === "OWNER" || activeWorkspace?.myRole === "ADMIN") && (
+            <button
+              onClick={handleCopyInvite}
+              title="Скопировать ссылку-приглашение"
+              className="ml-2 shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-800 hover:text-indigo-400"
+            >
+              {copiedInvite ? (
+                <Check className="h-4 w-4 text-emerald-400" />
+              ) : (
+                <UserPlus className="h-4 w-4" />
+              )}
+            </button>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-3">

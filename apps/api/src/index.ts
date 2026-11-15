@@ -9,6 +9,7 @@ import { setupSocketServer } from "./lib/socket.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { workspaceRoutes } from "./modules/workspaces/workspaces.routes.js";
 import { messageRoutes } from "./modules/messages/messages.routes.js";
+import { inviteRoutes } from "./modules/workspaces/invites.routes.js";
 
 const server = Fastify({
   logger: true,
@@ -37,6 +38,7 @@ await server.register(fastifyJwt, {
 // 4. Регистрируем все доменные REST-маршруты
 await server.register(authRoutes, { prefix: "/api/auth" });
 await server.register(workspaceRoutes, { prefix: "/api/workspaces" });
+await server.register(inviteRoutes, { prefix: "/api/workspaces" });
 await server.register(messageRoutes, { prefix: "/api/messages" });
 
 // 5. Инициализируем WebSocket-сервер поверх Fastify

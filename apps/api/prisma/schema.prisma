@@ -36,6 +36,7 @@ model Workspace {
 
   members     WorkspaceMember[]
   channels    Channel[]
+  invites     WorkspaceInvite[]
 }
 
 model WorkspaceMember {
@@ -79,4 +80,16 @@ model Message {
   channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
 
   @@index([channelId, createdAt])
+}
+
+model WorkspaceInvite {
+  id          String    @id @default(uuid())
+  code        String    @unique
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([code])
 }
