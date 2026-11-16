@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev"
@@ -27,6 +28,7 @@
     "@nexus/tsconfig": "workspace:*",
     "@types/node": "^22.13.10",
     "prisma": "^6.5.0",
-    "tsx": "^4.19.3"
+    "tsx": "^4.19.3",
+    "vitest": "^5.1.0"
   }
 }
